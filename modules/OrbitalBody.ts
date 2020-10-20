@@ -13,7 +13,7 @@ export default class OrbitalBody {
     this.mass =
       this.density *
       ((4.0 / 3.0) * Math.PI * this.radius * this.radius * this.radius);
-    console.log(this.mass);
+    // console.log(this.mass);
   }
 
   makeEarth() {
