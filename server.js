@@ -6,6 +6,16 @@ const port = 3000;
 var file = new static.Server("./dist");
 
 let server = require("http").createServer(function (request, response) {
+  // Set CORS headers
+  console.log(request.url);
+  response.setHeader(
+    "Access-Control-Allow-Origin",
+    "https://celestrak.com/NORAD/elements/*"
+  );
+  //   response.setHeader("Access-Control-response-Method", "*");
+  response.setHeader("Access-Control-Allow-Methods", "GET");
+  response.setHeader("Access-Control-Allow-Headers", "*");
+
   request
     .addListener("end", function () {
       //
