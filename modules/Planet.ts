@@ -9,8 +9,8 @@ export default class Planet extends THREE.Mesh {
     super();
     this.body = new OrbitalBody();
     this.geometry = new THREE.SphereBufferGeometry(
-      1,
-      30,
+      this.body.radius,
+      60,
       30,
       0,
       Math.PI * 2,

@@ -15,4 +15,10 @@ export default class OrbitalBody {
       ((4.0 / 3.0) * Math.PI * this.radius * this.radius * this.radius);
     console.log(this.mass);
   }
+
+  makeEarth() {
+    this.density = 5515; //5510 kg/m3
+    this.radius = 6371000; // 6 371km
+    this.computeMass();
+  }
 }
