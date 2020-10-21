@@ -1,4 +1,5 @@
-console.log("hello from typescript");
+"use_strinct";
+// console.log("hello from typescript !!!!");
 import "regenerator-runtime/runtime";
 import * as THREE from "three";
 import Planet from "./modules/Planet";
@@ -8,8 +9,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import DebugWindow from "./modules/DebugWindow";
 
-import { getLatLngObj, getSatelliteInfo } from "tle.js";
-import { Points } from "three";
+import { getSatelliteInfo } from "tle.js";
+
 // starlink data  : https://celestrak.com/NORAD/elements/starlink.txt
 
 // fetch("https://celestrak.com/NORAD/elements/starlink.txt")
@@ -29,11 +30,12 @@ let container = document.getElementById("orbitons-container");
 document.body.appendChild(canvas);
 let universe = new UniverseParams();
 let planet = new Planet("Earth");
+let scene: THREE.Scene = new THREE.Scene();
 planet.body.makeEarth();
 universe.scale = 1.0 / planet.body.radius;
 planet.scale.set(universe.scale, universe.scale, universe.scale);
+scene.add(planet);
 
-let scene: THREE.Scene = new THREE.Scene();
 let camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
   60,
   window.innerWidth / window.innerHeight,
@@ -73,8 +75,6 @@ window.addEventListener("resize", on_resize);
 let event: Event = new Event("resize");
 window.dispatchEvent(event);
 
-scene.add(planet);
-
 const tle = `STARLINK-72             
 1 44263U 19029AE  20289.47516335  .12398314  12643-4  16439-3 0  9992
 2 44263  52.9820 318.7786 0003330 292.8532  67.5533 16.49183723 78173`;
@@ -82,10 +82,12 @@ const tle = `STARLINK-72
 // console.log(getLatLngObj(tle));
 let sat_infos = [];
 let tle_data = "";
-function parse_tle_data(data: string) {
+let tle_array: string[] = [];
+
+function collect_tles_data(data: string): string[] {
   let array = data.split("\n");
   // console.log(array);
-  sat_infos = [];
+  let ret = [];
   for (let i = 0; i < array.length; i += 3) {
     let assemble = ``;
     assemble += array[i] + "\n";
@@ -93,15 +95,31 @@ function parse_tle_data(data: string) {
     assemble += array[i + 2];
     // console.log(assemble);
     try {
-      let infos = getSatelliteInfo(assemble, Date.now(), 0.0, 0.0, 0.0);
+      // let infos = getSatelliteInfo(assemble, Date.now(), 0.0, 0.0, 0.0);
+      ret.push(assemble);
+    } catch (err) {
+      // console.error(err);
+    }
+  }
+
+  return ret;
+}
+
+function parse_tle_data(array: string[]): object[] {
+  sat_infos = [];
+  for (let i = 0; i < array.length; i++) {
+    try {
+      let infos = getSatelliteInfo(array[i], Date.now());
       sat_infos.push(infos);
     } catch (err) {
       // console.error(err);
     }
   }
 
+  return sat_infos;
   // console.log(sat_infos);
 }
+
 function calcPosFromLatLonRad(radius, lat, lon) {
   var spherical = new THREE.Spherical(
     radius,
@@ -115,6 +133,7 @@ function calcPosFromLatLonRad(radius, lat, lon) {
   // console.log(vector.x, vector.y, vector.z);
   return vector;
 }
+
 /**
  * Adds time to a date. Modelled after MySQL DATE_ADD function.
  * Example: dateAdd(new Date(), 'minute', 30)  //returns 30 minutes from now.
@@ -164,11 +183,16 @@ function dateAdd(date, interval, units) {
   }
   return ret;
 }
-let sat_points: THREE.Points = new THREE.Points();
+let sat_points: THREE.Points = new THREE.Points(new THREE.Geometry());
 // console.log(calcPosFromLatLonRad(0.5, -74.00597, 40.71427));
-function init_spacex_sats() {
-  let geometry: THREE.Geometry = new THREE.Geometry();
-  sat_points.geometry = geometry;
+// let geometry: THREE.Geometry = new THREE.Geometry();
+// sat_points.geometry = geometry;
+function init_spacex_sats(data: string[]) {
+  for (let sat_info of data) {
+    (sat_points.geometry as THREE.Geometry).vertices.push(
+      new THREE.Vector3(0, 0, 0)
+    );
+  }
   let material: THREE.PointsMaterial = new THREE.PointsMaterial({
     size: 0.01,
   });
@@ -176,28 +200,20 @@ function init_spacex_sats() {
   sat_points.material = material;
   scene.add(sat_points);
 }
-function update_spacex_sats() {
-  // console.log("updating sats poisitions");
-
-  if ((sat_points.geometry as THREE.Geometry).vertices) {
-    // console.log((sat_points.geometry as THREE.Geometry).vertices.length);
-  }
-
-  let i = 0;
-  (sat_points.geometry as THREE.Geometry).vertices.splice(
-    0,
-    (sat_points.geometry as THREE.Geometry).vertices.length
-  );
-  for (let sat_info of sat_infos) {
+function update_spacex_sats(data: object[]) {
+  for (let i = 0; i < data.length; i++) {
     // console.log(sat_info.height);
+    // let pos = new THREE.Vector3();
     let pos = calcPosFromLatLonRad(
-      (sat_info.height * 1000 + planet.body.radius) * universe.scale,
-      sat_info.lat,
-      sat_info.lng
+      (sat_infos[i].height * 1000 + planet.body.radius) * universe.scale,
+      sat_infos[i].lat,
+      sat_infos[i].lng
     );
 
-    (sat_points.geometry as THREE.Geometry).vertices.push(
-      new THREE.Vector3(pos.x, pos.y, pos.z)
+    (sat_points.geometry as THREE.Geometry).vertices[i].set(
+      pos.x,
+      pos.y,
+      pos.z
     );
   }
   (sat_points.geometry as THREE.Geometry).verticesNeedUpdate = true;
@@ -207,9 +223,11 @@ fetch("/tle_data/spacex.txt")
   .then((response) => response.text())
   .then((data) => {
     tle_data = data;
-    parse_tle_data(tle_data);
-    init_spacex_sats();
-    update_spacex_sats();
+    tle_array = collect_tles_data(tle_data);
+    // console.log("TLE DATA size : ", tle_array.length);
+    init_spacex_sats(tle_array);
+    parse_tle_data(tle_array);
+    update_spacex_sats(sat_infos);
   });
 
 //test gps
@@ -220,34 +238,40 @@ let test_coords = calcPosFromLatLonRad(
 );
 let sphere = new THREE.Mesh();
 sphere.geometry = new THREE.SphereGeometry(0.01, 30, 30);
-console.log(test_coords);
+// console.log(test_coords);
 sphere.position.set(test_coords.x, test_coords.y, test_coords.z);
 
 scene.add(sphere);
 
 let refresh_counter = 0;
+
 function animate() {
-  if (refresh_counter && refresh_counter > 0.1 && tle_data) {
+  let delta_t = clock.getDelta();
+
+  if (refresh_counter > 5.0) {
     refresh_counter = 0;
-    parse_tle_data(tle_data);
-    update_spacex_sats();
+    update_spacex_sats(parse_tle_data(tle_array));
+    // console.log("tttt");
   }
 
-  refresh_counter += clock.getDelta();
-  // console.log(refresh_counter);
+  refresh_counter += delta_t;
+  // console.log(sat_infos.length);
   // parse_tle_data(tle_data);
 
-  debugWindow.update({
-    "Camera altitude ":
-      (camera.position.distanceTo(new THREE.Vector3(0, 0, 0)) * 1.0) /
-      universe.scale,
-    "earth radius": planet.body.radius,
-    "earth radius 2": planet.body.radius,
-  });
+  // debugWindow.update({
+  //   "Camera altitude ":
+  //     (camera.position.distanceTo(new THREE.Vector3(0, 0, 0)) * 1.0) /
+  //     universe.scale,
+  //   "earth radius": planet.body.radius,
+  //   "earth radius 2": planet.body.radius,
+  // });
 
-  renderer // planet.rotateY(0.3 * clock.getDelta());
-    .render(scene, camera);
+  // planet.rotateY(0.02 * delta_t);
+
+  renderer.render(scene, camera);
   requestAnimationFrame(animate);
+
+  renderer.renderLists.dispose();
 }
 
 animate();

@@ -20,13 +20,13 @@ export default class Planet extends THREE.Mesh {
     // this.material = new THREE.MeshLambertMaterial()
     let loader = new THREE.TextureLoader();
     const onLoad = (image) => {
-      console.log(image);
+      // console.log(image);
 
       this.material = new THREE.MeshLambertMaterial({
         map: image,
       });
 
-      console.log("textures loaded");
+      // console.log("textures loaded");
     };
 
     const onError = (err) => {
