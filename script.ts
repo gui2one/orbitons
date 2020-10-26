@@ -9,16 +9,17 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import DebugWindow from "./modules/DebugWindow";
 
-import { getSatelliteInfo } from "tle.js";
+import SatellitesData from "./modules/SatellitesData";
 
 // starlink data  : https://celestrak.com/NORAD/elements/starlink.txt
 
-// fetch("https://celestrak.com/NORAD/elements/starlink.txt")
-//   .then((repsonse) => repsonse.text())
-//   .then((data) => console.log(data));
 let clock = new THREE.Clock(true);
+let satellites_data = new SatellitesData();
 
-// console.log(getSatelliteInfo(tle, Date.now()));
+satellites_data.loadFromTextFile("tle_data/spacex.txt").then((response) => {
+  //
+  console.log("loaded satellites data");
+});
 let renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({
   antialias: true,
 });
@@ -105,21 +106,6 @@ function collect_tles_data(data: string): string[] {
   return ret;
 }
 
-function parse_tle_data(array: string[]): object[] {
-  sat_infos = [];
-  for (let i = 0; i < array.length; i++) {
-    try {
-      let infos = getSatelliteInfo(array[i], Date.now());
-      sat_infos.push(infos);
-    } catch (err) {
-      // console.error(err);
-    }
-  }
-
-  return sat_infos;
-  // console.log(sat_infos);
-}
-
 function calcPosFromLatLonRad(radius, lat, lon) {
   var spherical = new THREE.Spherical(
     radius,
@@ -184,51 +170,6 @@ function dateAdd(date, interval, units) {
   return ret;
 }
 let sat_points: THREE.Points = new THREE.Points(new THREE.Geometry());
-// console.log(calcPosFromLatLonRad(0.5, -74.00597, 40.71427));
-// let geometry: THREE.Geometry = new THREE.Geometry();
-// sat_points.geometry = geometry;
-function init_spacex_sats(data: string[]) {
-  for (let sat_info of data) {
-    (sat_points.geometry as THREE.Geometry).vertices.push(
-      new THREE.Vector3(0, 0, 0)
-    );
-  }
-  let material: THREE.PointsMaterial = new THREE.PointsMaterial({
-    size: 0.01,
-  });
-
-  sat_points.material = material;
-  scene.add(sat_points);
-}
-function update_spacex_sats(data: object[]) {
-  for (let i = 0; i < data.length; i++) {
-    // console.log(sat_info.height);
-    // let pos = new THREE.Vector3();
-    let pos = calcPosFromLatLonRad(
-      (sat_infos[i].height * 1000 + planet.body.radius) * universe.scale,
-      sat_infos[i].lat,
-      sat_infos[i].lng
-    );
-
-    (sat_points.geometry as THREE.Geometry).vertices[i].set(
-      pos.x,
-      pos.y,
-      pos.z
-    );
-  }
-  (sat_points.geometry as THREE.Geometry).verticesNeedUpdate = true;
-}
-
-fetch("/tle_data/spacex.txt")
-  .then((response) => response.text())
-  .then((data) => {
-    tle_data = data;
-    tle_array = collect_tles_data(tle_data);
-    // console.log("TLE DATA size : ", tle_array.length);
-    init_spacex_sats(tle_array);
-    parse_tle_data(tle_array);
-    update_spacex_sats(sat_infos);
-  });
 
 //test gps
 let test_coords = calcPosFromLatLonRad(
@@ -248,25 +189,11 @@ let refresh_counter = 0;
 function animate() {
   let delta_t = clock.getDelta();
 
-  if (refresh_counter > 5.0) {
+  if (refresh_counter > 1.0) {
     refresh_counter = 0;
-    update_spacex_sats(parse_tle_data(tle_array));
-    // console.log("tttt");
   }
 
   refresh_counter += delta_t;
-  // console.log(sat_infos.length);
-  // parse_tle_data(tle_data);
-
-  // debugWindow.update({
-  //   "Camera altitude ":
-  //     (camera.position.distanceTo(new THREE.Vector3(0, 0, 0)) * 1.0) /
-  //     universe.scale,
-  //   "earth radius": planet.body.radius,
-  //   "earth radius 2": planet.body.radius,
-  // });
-
-  // planet.rotateY(0.02 * delta_t);
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
