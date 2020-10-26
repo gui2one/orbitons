@@ -52,14 +52,14 @@ export default class SatellitesData {
 
         let positionGd = SAT.eciToGeodetic(positionEci, gmst);
 
-        let x = (positionGd.longitude + Math.PI) / (Math.PI * 2);
-        let y = 1 - (positionGd.latitude + Math.PI / 2) / Math.PI;
+        let x = (positionGd.longitude / Math.PI) * 180;
+        let y = (positionGd.latitude / Math.PI) * 180;
 
         data.longitude = x;
         data.latitude = y;
-
+        data.elevation = positionGd.height;
         data.error = false;
-        // console.log(x, y);
+        // console.log("longitude :", positionGd.longitude);
       } catch (err) {
         data.error = true;
         // console.error("sat n° :", counter, err);

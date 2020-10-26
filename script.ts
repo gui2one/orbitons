@@ -12,14 +12,31 @@ import DebugWindow from "./modules/DebugWindow";
 import SatellitesData from "./modules/SatellitesData";
 
 // starlink data  : https://celestrak.com/NORAD/elements/starlink.txt
-
+let scene: THREE.Scene = new THREE.Scene();
 let clock = new THREE.Clock(true);
+let sat_points: THREE.Points = new THREE.Points(
+  new THREE.Geometry(),
+  new THREE.PointsMaterial({ size: 0.01 })
+);
 let satellites_data = new SatellitesData();
 
 satellites_data.loadFromTextFile("tle_data/spacex.txt").then((response) => {
   //
   console.log("loaded satellites data");
+  for (let data of satellites_data.satDatas) {
+    let geo = <THREE.Geometry>sat_points.geometry;
+    let pos = calcPosFromLatLonRad(
+      (planet.body.radius + data.elevation * 1000) * universe.scale,
+      data.latitude,
+      data.longitude
+    );
+    // console.log(data.elevation);
+    geo.vertices.push(pos);
+  }
+
+  scene.add(sat_points);
 });
+
 let renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({
   antialias: true,
 });
@@ -31,7 +48,7 @@ let container = document.getElementById("orbitons-container");
 document.body.appendChild(canvas);
 let universe = new UniverseParams();
 let planet = new Planet("Earth");
-let scene: THREE.Scene = new THREE.Scene();
+
 planet.body.makeEarth();
 universe.scale = 1.0 / planet.body.radius;
 planet.scale.set(universe.scale, universe.scale, universe.scale);
@@ -169,7 +186,6 @@ function dateAdd(date, interval, units) {
   }
   return ret;
 }
-let sat_points: THREE.Points = new THREE.Points(new THREE.Geometry());
 
 //test gps
 let test_coords = calcPosFromLatLonRad(
@@ -189,8 +205,26 @@ let refresh_counter = 0;
 function animate() {
   let delta_t = clock.getDelta();
 
-  if (refresh_counter > 1.0) {
+  if (refresh_counter > 0.06) {
     refresh_counter = 0;
+
+    satellites_data.getSatellitesData(new Date());
+
+    let i = 0;
+    for (let data of satellites_data.satDatas) {
+      let geo = <THREE.Geometry>sat_points.geometry;
+      let pos = calcPosFromLatLonRad(
+        (planet.body.radius + data.elevation * 1000) * universe.scale,
+        data.latitude,
+        data.longitude
+      );
+      geo.vertices[i].x = pos.x;
+      geo.vertices[i].y = pos.y;
+      geo.vertices[i].z = pos.z;
+
+      geo.verticesNeedUpdate = true;
+      i++;
+    }
   }
 
   refresh_counter += delta_t;
