@@ -3,7 +3,7 @@ import * as THREE from "three";
 
 export default class Planet extends THREE.Mesh {
   body: OrbitalBody;
-  object3d: THREE.Mesh;
+  // object3d: THREE.Mesh;
 
   constructor(name: string = "default name") {
     super();

@@ -8,7 +8,26 @@
   </head>
   <body>
     <div id="orbitons-container"></div>
+    <div id="UI">
+      <div id="ui-inputs">
+        <select name="satellite_chooser" id="satellite_chooser"></select>
 
+        <label for="show_all">Show All</label>
+        <input type="checkbox" name="show_all" id="show_all" />
+      </div>
+
+      <div id="toggle_button">
+        <svg viewBox="0 0 50 100">
+          <path
+            d="M0 0 L50 50 L0 100"
+            fill="none"
+            stroke="#fff9"
+            stroke-width="15"
+            stroke-linecap="round"
+          ></path>
+        </svg>
+      </div>
+    </div>
     <script src="script.ts"></script>
   </body>
 </html>
