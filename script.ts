@@ -10,68 +10,53 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import DebugWindow from "./modules/DebugWindow";
 
 import SatellitesData from "./modules/SatellitesData";
+import SatellitesPoints from "./modules/SatellitesPoints";
 import SceneBackground from "./modules/SceneBackground";
+
+// Can also be 'vsop87/dist/vsop87a'.
+const vsop87c = require("vsop87/dist/vsop87c");
+
+// Get an object with the (x,y,z) coordinates of each planet.
+
+// const coords = vsop87c(2451545);
+// console.log(coords);
+
+// let UTC = Date.UTC(1970, 0, 1, 0, 0, 0, 0);
+// console.log(UTC / 1000 / 60);
 
 // starlink data  : https://celestrak.com/NORAD/elements/starlink.txt
 
-let scene: THREE.Scene = new THREE.Scene();
-let renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({
+let scene: THREE.Scene;
+let renderer: THREE.WebGLRenderer;
+let camera: THREE.PerspectiveCamera;
+let orbitControls: OrbitControls;
+
+let dir_light: THREE.DirectionalLight;
+let dir_light_helper: THREE.DirectionalLightHelper;
+let ambient: THREE.AmbientLight;
+
+let universe: UniverseParams;
+let planet: Planet;
+
+let clock: THREE.Clock;
+let bg: SceneBackground;
+
+let selected_sat_object: THREE.Mesh;
+let selected_sat_index: number;
+
+//init THREEJS scene and renderer
+scene = new THREE.Scene();
+renderer = new THREE.WebGLRenderer({
   antialias: true,
 });
-let bg = new SceneBackground(scene, renderer);
-
-let clock = new THREE.Clock(true);
-let sat_points: THREE.Points = new THREE.Points(
-  new THREE.Geometry(),
-  new THREE.PointsMaterial({
-    size: 0.01,
-    color: "#fff",
-    depthTest: true,
-    // depthWrite: true,
-  })
-);
-
-let selected_sat_object: THREE.Mesh = new THREE.Mesh();
-selected_sat_object.geometry = new THREE.SphereGeometry(0.01);
-selected_sat_object.material = new THREE.MeshLambertMaterial({ color: "red" });
-selected_sat_object.position.set(-1.2, 1, -1);
-scene.add(selected_sat_object);
-let satellites_data = new SatellitesData();
-let selected_sat_index = 0;
-satellites_data.loadFromTextFile("tle_data/spacex.txt").then((response) => {
-  //
-  console.log("loaded satellites data");
-  for (let data of satellites_data.satDatas) {
-    let geo = <THREE.Geometry>sat_points.geometry;
-    let pos = calcPosFromLatLonRad(
-      (planet.body.radius + data.elevation * 1000) * universe.scale,
-      data.latitude,
-      data.longitude
-    );
-    // console.log(data.elevation);
-    geo.vertices.push(pos);
-  }
-
-  scene.add(sat_points);
-  initUI();
-});
-
-// let bg = new TextureBackground("textures/milkyway_small.jpg");
-
-let debugWindow = new DebugWindow();
+clock = new THREE.Clock(true);
+bg = new SceneBackground(scene, renderer);
 
 let canvas = renderer.domElement;
 
 document.body.appendChild(canvas);
-let universe = new UniverseParams();
-let planet = new Planet("Earth");
 
-planet.body.makeEarth();
-universe.scale = 1.0 / planet.body.radius;
-planet.scale.set(universe.scale, universe.scale, universe.scale);
-scene.add(planet);
-
-let camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
+camera = new THREE.PerspectiveCamera(
   60,
   window.innerWidth / window.innerHeight,
   0.1,
@@ -80,13 +65,41 @@ let camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
 
 camera.position.setZ(3);
 
-let orbitControls = new OrbitControls(camera, renderer.domElement);
+orbitControls = new OrbitControls(camera, renderer.domElement);
+// orbitControls.enabled = false;
 
-let dir_light = new THREE.DirectionalLight("white", 1.0);
+/*
+ * init custom stuff
+ */
+
+planet = new Planet("Earth");
+scene.add(planet);
+planet.body.makeEarth();
+
+universe = new UniverseParams();
+//set reference scale to "earth_radius = 1 unit in 3d space"
+universe.scale = 1.0 / planet.body.radius;
+
+planet.scale.set(universe.scale, universe.scale, universe.scale);
+
+selected_sat_object = new THREE.Mesh();
+selected_sat_object.geometry = new THREE.SphereGeometry(0.01);
+selected_sat_object.material = new THREE.MeshBasicMaterial({ color: "red" });
+scene.add(selected_sat_object);
+
+selected_sat_index = 0;
+
+let sat_points = new SatellitesPoints(scene, universe, planet, () => {
+  initUI();
+});
+
+let debugWindow = new DebugWindow();
+
+dir_light = new THREE.DirectionalLight("white", 1.0);
 dir_light.position.set(-100, 0, 6);
 dir_light.target = planet;
 
-let dir_light_helper = new THREE.DirectionalLightHelper(
+dir_light_helper = new THREE.DirectionalLightHelper(
   dir_light,
   2,
   new THREE.Color(255, 255, 0)
@@ -95,7 +108,7 @@ let dir_light_helper = new THREE.DirectionalLightHelper(
 dir_light_helper.update();
 scene.add(dir_light);
 
-let ambient = new THREE.AmbientLight("white", 0.2);
+ambient = new THREE.AmbientLight("violet", 0.05);
 scene.add(ambient);
 
 const on_resize = (event) => {
@@ -109,29 +122,6 @@ window.addEventListener("resize", on_resize);
 
 let event: Event = new Event("resize");
 window.dispatchEvent(event);
-
-const tle = `STARLINK-72             
-1 44263U 19029AE  20289.47516335  .12398314  12643-4  16439-3 0  9992
-2 44263  52.9820 318.7786 0003330 292.8532  67.5533 16.49183723 78173`;
-
-// console.log(getLatLngObj(tle));
-let sat_infos = [];
-let tle_data = "";
-let tle_array: string[] = [];
-
-function calcPosFromLatLonRad(radius, lat, lon) {
-  var spherical = new THREE.Spherical(
-    radius,
-    THREE.MathUtils.degToRad(90 - lat),
-    THREE.MathUtils.degToRad(lon + 90)
-  );
-
-  var vector = new THREE.Vector3();
-  vector.setFromSpherical(spherical);
-
-  // console.log(vector.x, vector.y, vector.z);
-  return vector;
-}
 
 /**
  * Adds time to a date. Modelled after MySQL DATE_ADD function.
@@ -183,25 +173,14 @@ function dateAdd(date, interval, units) {
   return ret;
 }
 
-//test gps
-let test_coords = calcPosFromLatLonRad(
-  (planet.body.radius + 500) * universe.scale,
-  48.099403,
-  -1.698596
-);
-let sphere = new THREE.Mesh();
-sphere.geometry = new THREE.SphereGeometry(0.01, 30, 30);
-// console.log(test_coords);
-sphere.position.set(test_coords.x, test_coords.y, test_coords.z);
-
-scene.add(sphere);
-// scene.add(bg);
 const initUI = () => {
-  let select: HTMLSelectElement = document.getElementById(
-    "satellite_chooser"
-  ) as HTMLSelectElement;
+  let root = <HTMLDivElement>document.getElementById("UI");
+  let select = <HTMLSelectElement>document.getElementById("satellite_chooser");
+  let toggle_btn = <HTMLDivElement>document.getElementById("toggle_button");
   let counter = 0;
-  for (let data of satellites_data.satDatas) {
+  // console.log(sat_points.data.satDatas);
+
+  for (let data of sat_points.data.satDatas) {
     let option = document.createElement("option");
     option.value = counter.toString();
     option.innerHTML = data.name;
@@ -210,55 +189,36 @@ const initUI = () => {
     counter++;
   }
 
+  toggle_btn.addEventListener("click", () => {
+    root.classList.toggle("hidden");
+  });
+
   select.addEventListener("change", (e) => {
     selected_sat_index = select.selectedIndex;
     console.log(
       "seleted sat is :",
-      satellites_data.satDatas[selected_sat_index].name
+      sat_points.data.satDatas[selected_sat_index].name
     );
   });
 
-  let show_all_chkbox: HTMLInputElement = document.getElementById(
-    "show_all"
-  ) as HTMLInputElement;
+  let show_all_chkbox = <HTMLInputElement>document.getElementById("show_all");
+
   if (show_all_chkbox) {
     show_all_chkbox.checked = true;
 
     show_all_chkbox.addEventListener("change", () => {
-      // console.log(show_all_chkbox.checked);
       sat_points.visible = show_all_chkbox.checked;
     });
   }
 };
 
 const update = () => {
-  satellites_data.getSatellitesData(new Date());
-
-  let i = 0;
-  for (let data of satellites_data.satDatas) {
-    let geo = <THREE.Geometry>sat_points.geometry;
-    let pos = calcPosFromLatLonRad(
-      (planet.body.radius + data.elevation * 1000) * universe.scale,
-      data.latitude,
-      data.longitude
-    );
-    geo.vertices[i].x = pos.x;
-    geo.vertices[i].y = pos.y;
-    geo.vertices[i].z = pos.z;
-
-    geo.verticesNeedUpdate = true;
-    i++;
-  }
+  sat_points.update();
 
   //draw selected Satellite
   if (selected_sat_index != -1) {
-    let data = satellites_data.satDatas[selected_sat_index];
-    let pos = calcPosFromLatLonRad(
-      (planet.body.radius + data.elevation * 1000) * universe.scale,
-      data.latitude,
-      data.longitude
-    );
-    selected_sat_object.position.set(pos.x, pos.y, pos.z);
+    let pos2 = sat_points.geometry.vertices[selected_sat_index];
+    selected_sat_object.position.set(pos2.x, pos2.y, pos2.z);
   }
 };
 
@@ -272,13 +232,10 @@ function animate() {
     update();
   }
 
-  // bg.position.set(camera.position.x, camera.position.y, camera.position.z);
   refresh_counter += delta_t;
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
-
-  // renderer.renderLists.dispose();
 }
 
 animate();

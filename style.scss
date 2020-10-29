@@ -4,6 +4,7 @@
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 canvas {
@@ -20,14 +21,27 @@ canvas {
   position: absolute;
   user-select: none;
   padding-left: 1em;
-  background: rgba(white, 0.5);
-
+  background: rgba(#111, 0.8);
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   //   padding: 0em 0.5em;
-  transition: transform 0.5s;
+  transition: transform 0.3s;
 
+  #ui-inputs {
+    padding-right: 1em;
+    position: relative;
+    &::before {
+      content: "";
+      position: absolute;
+      right: 0px;
+      top: 0px;
+      height: 100%;
+      width: 2px;
+      background: rgba(white, 0.2);
+    }
+  }
   &.hidden {
     transform: translateX(calc(-100% + 25px));
     svg {
@@ -48,9 +62,17 @@ canvas {
     cursor: pointer;
   }
 
-  input[type="select"] {
-    font-family: "Anonymous Pro", monospace;
-    font-weight: bold;
+  select {
+    padding: 0.5em;
+    background-color: black;
+    color: white;
+  }
+  option {
+    background-color: black;
+    color: white;
+  }
+  option:hover {
+    background-color: red;
   }
 
   option.error,
@@ -60,7 +82,7 @@ canvas {
   svg {
     position: relative;
     object-fit: contain;
-    transition: transform 0.2s linear 0.25s;
+    transition: transform 0.2s linear 0.05s;
     overflow: visible;
     transform: scale(-0.5, 0.5);
     width: 25px;
