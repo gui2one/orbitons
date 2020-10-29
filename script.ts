@@ -56,12 +56,7 @@ let canvas = renderer.domElement;
 
 document.body.appendChild(canvas);
 
-camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100.0
-);
+camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100.0);
 
 camera.position.setZ(3);
 
@@ -99,11 +94,7 @@ dir_light = new THREE.DirectionalLight("white", 1.0);
 dir_light.position.set(-100, 0, 6);
 dir_light.target = planet;
 
-dir_light_helper = new THREE.DirectionalLightHelper(
-  dir_light,
-  2,
-  new THREE.Color(255, 255, 0)
-);
+dir_light_helper = new THREE.DirectionalLightHelper(dir_light, 2, new THREE.Color(255, 255, 0));
 
 dir_light_helper.update();
 scene.add(dir_light);
@@ -195,10 +186,7 @@ const initUI = () => {
 
   select.addEventListener("change", (e) => {
     selected_sat_index = select.selectedIndex;
-    console.log(
-      "seleted sat is :",
-      sat_points.data.satDatas[selected_sat_index].name
-    );
+    console.log("seleted sat is :", sat_points.data.satDatas[selected_sat_index].name);
   });
 
   let show_all_chkbox = <HTMLInputElement>document.getElementById("show_all");
