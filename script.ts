@@ -12,6 +12,7 @@ import DebugWindow from "./modules/DebugWindow";
 import SatellitesData from "./modules/SatellitesData";
 import SatellitesPoints from "./modules/SatellitesPoints";
 import SceneBackground from "./modules/SceneBackground";
+import { time } from "console";
 
 // Can also be 'vsop87/dist/vsop87a'.
 const vsop87c = require("vsop87/dist/vsop87c");
@@ -39,6 +40,8 @@ let universe: UniverseParams;
 let planet: Planet;
 
 let clock: THREE.Clock;
+let simulation_time: number = 0;
+let time_offset_mult: number = 0;
 let bg: SceneBackground;
 
 let selected_sat_object: THREE.Mesh;
@@ -111,7 +114,7 @@ let event: Event = new Event("resize");
 window.dispatchEvent(event);
 
 let sat_points = new SatellitesPoints(scene, universe, planet, () => {
-  //setTimeout is a dirty hack beacause UI does init correctly most of the time, async issue I think ....
+  //setTimeout is a dirty hack beacause UI does NOT init correctly most of the time, an async issue I think ....
   setTimeout(() => {
     initUI();
   }, 100);
@@ -168,9 +171,12 @@ function dateAdd(date, interval, units) {
 }
 
 const initUI = () => {
-  let root = <HTMLDivElement>document.getElementById("UI");
+  let UI = <HTMLDivElement>document.getElementById("UI");
+  let time_UI = <HTMLDivElement>document.getElementById("time_UI");
   let select = <HTMLSelectElement>document.getElementById("satellite_chooser");
-  let toggle_btn = <HTMLDivElement>document.getElementById("toggle_button");
+  let UI_toggle_btn = <HTMLDivElement>document.getElementById("toggle_button");
+  let time_UI_toggle_btn = <HTMLDivElement>document.getElementById("time_UI_toggle_button");
+  let time_reset_btn = <HTMLDivElement>document.getElementById("time_reset_btn");
   let counter = 0;
   // console.log(sat_points.data.satDatas);
 
@@ -183,8 +189,8 @@ const initUI = () => {
     counter++;
   }
 
-  toggle_btn.addEventListener("click", () => {
-    root.classList.toggle("hidden");
+  UI_toggle_btn.addEventListener("click", () => {
+    UI.classList.toggle("hidden");
   });
 
   select.addEventListener("change", (e) => {
@@ -201,15 +207,54 @@ const initUI = () => {
       sat_points.visible = show_all_chkbox.checked;
     });
   }
+
+  // time UI
+
+  let time_offset_mult_field = <HTMLInputElement>document.getElementById("time_offset_mult");
+  time_offset_mult_field.setAttribute("value", time_offset_mult.toString());
+
+  time_offset_mult_field.addEventListener("input", (e) => {
+    // console.log();
+    clock = new THREE.Clock(true);
+    time_offset_mult = parseFloat((<HTMLInputElement>e.target).value);
+  });
+
+  time_UI_toggle_btn.addEventListener("click", () => {
+    time_UI.classList.toggle("hidden");
+  });
+
+  time_reset_btn.addEventListener("click", () => {
+    clock = new THREE.Clock(true);
+    time_offset_mult = 0;
+    time_offset_mult_field.value = "0";
+  });
+};
+
+const updateUI = () => {
+  let real_time_span = document.getElementById("real_time");
+  let simu_time_span = document.getElementById("simu_time");
+  real_time_span.innerHTML = clock.elapsedTime.toFixed(2).toString();
+  simu_time_span.innerHTML = simulation_time.toFixed(2).toString();
 };
 
 const update = () => {
-  sat_points.update();
+  // console.log(dateAdd(new Date(), "minute", -10));
 
-  //draw selected Satellite
-  if (selected_sat_index != -1) {
-    let pos2 = sat_points.geometry.vertices[selected_sat_index];
-    selected_sat_object.position.set(pos2.x, pos2.y, pos2.z);
+  if (sat_points.bShaderLoaded) {
+    updateUI();
+
+    let time_offset = clock.elapsedTime * time_offset_mult;
+    let simulation_date = dateAdd(new Date(), "second", time_offset);
+    simulation_time = time_offset;
+    sat_points.update(simulation_date);
+
+    //draw selected Satellite
+    if (selected_sat_index != -1) {
+      let pos2 = sat_points.geometry.vertices[selected_sat_index];
+      if (pos2) {
+        selected_sat_object.position.set(pos2.x, pos2.y, pos2.z);
+      }
+    }
   }
 };
 
@@ -218,7 +263,7 @@ let refresh_counter = 0;
 function animate() {
   let delta_t = clock.getDelta();
 
-  if (refresh_counter > 0.06) {
+  if (refresh_counter > 0.025) {
     refresh_counter = 0;
     update();
   }

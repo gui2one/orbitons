@@ -15,10 +15,10 @@ export default class Planet extends THREE.Mesh {
     // this.material = new THREE.MeshLambertMaterial()
     let manager: THREE.LoadingManager = new THREE.LoadingManager();
     manager.onStart = (url, itemsLoaded, itemsTotal) => {
-      console.log("Started loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
+      // console.log("Started loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
     };
     manager.onLoad = () => {
-      console.log("loading Completed ... Nice");
+      console.log("Planet textures loading Completed ... Nice");
       this.material = new THREE.MeshStandardMaterial({
         map: this.diffuse_map,
         // roughness: 0.3,
@@ -31,7 +31,7 @@ export default class Planet extends THREE.Mesh {
     };
 
     manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-      console.log("Loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
+      // console.log("Loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
     };
 
     let loader_diffuse = new THREE.TextureLoader(manager);
@@ -43,7 +43,7 @@ export default class Planet extends THREE.Mesh {
       console.error("An error happened.");
       console.log(err);
     };
-    loader_diffuse.load("textures/2k_earth_daymap.jpg", onLoadDiffuse, undefined, onErrorDiffuse);
+    loader_diffuse.load("textures/earthmap1k.jpg", onLoadDiffuse, undefined, onErrorDiffuse);
 
     let loader_bump = new THREE.TextureLoader(manager);
     const onLoadBump = (image) => {

@@ -18,13 +18,22 @@
 
       <div id="toggle_button">
         <svg viewBox="0 0 50 100">
-          <path
-            d="M0 0 L50 50 L0 100"
-            fill="none"
-            stroke="#fff9"
-            stroke-width="15"
-            stroke-linecap="round"
-          ></path>
+          <path d="M0 0 L50 50 L0 100" fill="none" stroke="#fff9" stroke-width="15" stroke-linecap="round"></path>
+        </svg>
+      </div>
+    </div>
+
+    <div id="time_UI">
+      <div id="clock_display">
+        <span>Real Time :</span><span id="real_time"></span><br />
+        <span>Simu Time :</span><span id="simu_time"></span>
+      </div>
+      <label for="time_offset_mult">Time offset</label>
+      <input type="number" name="time_offset_mult" id="time_offset_mult" value="10" />
+      <button id="time_reset_btn">Reset</button>
+      <div id="time_UI_toggle_button">
+        <svg viewBox="0 0 50 100">
+          <path d="M0 0 L50 50 L0 100" fill="none" stroke="#fff9" stroke-width="15" stroke-linecap="round"></path>
         </svg>
       </div>
     </div>

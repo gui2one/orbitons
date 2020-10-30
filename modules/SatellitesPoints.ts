@@ -12,12 +12,7 @@ export default class SatellitesPoints extends THREE.Points {
   bShaderLoaded: boolean = false;
   geometry: THREE.Geometry;
   callback: () => void;
-  constructor(
-    scene: THREE.Scene,
-    universeParams: UniverseParams,
-    planet: Planet,
-    callback: () => void
-  ) {
+  constructor(scene: THREE.Scene, universeParams: UniverseParams, planet: Planet, callback: () => void) {
     super();
     this.geometry = new THREE.Geometry();
 
@@ -35,12 +30,7 @@ export default class SatellitesPoints extends THREE.Points {
     this.data.loadFromTextFile("tle_data/spacex.txt").then(() => {
       console.log("loaded data in custom Class");
       for (let data of this.data.satDatas) {
-        let pos = this.calcPosFromLatLonRad(
-          (this.planet.body.radius + data.elevation * 1000) *
-            this.universeParams.scale,
-          data.latitude,
-          data.longitude
-        );
+        let pos = this.calcPosFromLatLonRad((this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale, data.latitude, data.longitude);
         // console.log(data.elevation);
         this.geometry.vertices.push(pos);
       }
@@ -52,12 +42,23 @@ export default class SatellitesPoints extends THREE.Points {
       scale: { value: 0.02 },
       color: { value: new THREE.Color(1.0, 1, 1) },
     };
-    let loader = new THREE.FileLoader();
+    let manager: THREE.LoadingManager = new THREE.LoadingManager();
 
-    loader.load("shaders/SatellitesPoint.vert", (data) => {
+    manager.onLoad = () => {
+      console.log("Points resources loading Completed");
+
+      createShader();
+    };
+    let vert_loader = new THREE.FileLoader(manager);
+    let frag_loader = new THREE.FileLoader(manager);
+
+    vert_loader.load("shaders/SatellitesPoint.vert", (data) => {
       vertLoaded(data);
     });
-
+    //   console.log(data);
+    frag_loader.load("shaders/SatellitesPoint.frag", (data) => {
+      fragLoaded(data);
+    });
     const createShader = () => {
       this.material = new THREE.ShaderMaterial({
         uniforms: uniforms,
@@ -72,36 +73,27 @@ export default class SatellitesPoints extends THREE.Points {
 
     const vertLoaded = (data) => {
       this.vShader = data;
-      //   console.log(data);
-      loader.load("shaders/SatellitesPoint.frag", (data) => {
-        fragLoaded(data);
-      });
     };
 
     const fragLoaded = (data) => {
       this.fShader = data;
-      console.log(data);
+      //   console.log(data);
 
-      createShader();
+      //   // createShader();
 
-      console.log(this.material);
+      //   console.log(this.material);
     };
   }
 
-  update() {
+  update(date: Date = new Date()) {
     // console.log(this.data.satDatas[0].elevation);
     // console.log(this.universeParams.scale);
-    this.data.getSatellitesData(new Date());
+    this.data.getSatellitesData(date);
 
     let i = 0;
     for (let data of this.data.satDatas) {
       //   let geo = <THREE.Geometry>this.geometry;
-      let pos = this.calcPosFromLatLonRad(
-        (this.planet.body.radius + data.elevation * 1000) *
-          this.universeParams.scale,
-        data.latitude,
-        data.longitude
-      );
+      let pos = this.calcPosFromLatLonRad((this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale, data.latitude, data.longitude);
 
       //   console.log(pos.x);
 
@@ -117,11 +109,7 @@ export default class SatellitesPoints extends THREE.Points {
   }
 
   calcPosFromLatLonRad(radius, lat, lon) {
-    var spherical = new THREE.Spherical(
-      radius,
-      THREE.MathUtils.degToRad(90 - lat),
-      THREE.MathUtils.degToRad(lon + 90)
-    );
+    var spherical = new THREE.Spherical(radius, THREE.MathUtils.degToRad(90 - lat), THREE.MathUtils.degToRad(lon + 90));
 
     var vector = new THREE.Vector3();
     vector.setFromSpherical(spherical);
