@@ -84,10 +84,6 @@ scene.add(selected_sat_object);
 
 selected_sat_index = 0;
 
-let sat_points = new SatellitesPoints(scene, universe, planet, () => {
-  initUI();
-});
-
 let debugWindow = new DebugWindow();
 
 dir_light = new THREE.DirectionalLight("white", 1.0);
@@ -113,6 +109,13 @@ window.addEventListener("resize", on_resize);
 
 let event: Event = new Event("resize");
 window.dispatchEvent(event);
+
+let sat_points = new SatellitesPoints(scene, universe, planet, () => {
+  //setTimeout is a dirty hack beacause UI does init correctly most of the time, async issue I think ....
+  setTimeout(() => {
+    initUI();
+  }, 100);
+});
 
 /**
  * Adds time to a date. Modelled after MySQL DATE_ADD function.
