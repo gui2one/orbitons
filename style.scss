@@ -51,6 +51,11 @@ select {
   #ui-inputs {
     padding-right: 1em;
     position: relative;
+
+    label {
+      display: block;
+      margin: 0.5em 0;
+    }
   }
   &.hidden {
     transform: translateX(calc(-100%));

@@ -30,7 +30,11 @@ export default class SatellitesPoints extends THREE.Points {
 
     this.data.loadFromTextFile("tle_data/spacex.txt").then(() => {
       for (let data of this.data.satDatas) {
-        let pos = this.calcPosFromLatLonRad((this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale, data.latitude, data.longitude);
+        let pos = this.calcPosFromLatLonRad(
+          (this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale,
+          data.latitude,
+          data.longitude
+        );
         // console.log(data.elevation);
         this.geometry.vertices.push(pos);
       }
@@ -75,7 +79,11 @@ export default class SatellitesPoints extends THREE.Points {
 
     let i = 0;
     for (let data of this.data.satDatas) {
-      let pos = this.calcPosFromLatLonRad((this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale, data.latitude, data.longitude);
+      let pos = this.calcPosFromLatLonRad(
+        (this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale,
+        data.latitude,
+        data.longitude
+      );
 
       this.geometry.vertices[i].x = pos.x;
       this.geometry.vertices[i].y = pos.y;
@@ -88,7 +96,11 @@ export default class SatellitesPoints extends THREE.Points {
   }
 
   calcPosFromLatLonRad(radius, lat, lon) {
-    const spherical = new THREE.Spherical(radius, THREE.MathUtils.degToRad(90 - lat), THREE.MathUtils.degToRad(lon + 90));
+    const spherical = new THREE.Spherical(
+      radius,
+      THREE.MathUtils.degToRad(90 - lat),
+      THREE.MathUtils.degToRad(lon + 90)
+    );
 
     let vector = new THREE.Vector3();
     vector.setFromSpherical(spherical);

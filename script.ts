@@ -119,11 +119,10 @@ let sat_points = new SatellitesPoints(scene, universe, planet, () => {
   //setTimeout is a dirty hack beacause UI does NOT init correctly most of the time, an async issue I think ....
   setTimeout(() => {
     initUI();
+    sat_path = new SatellitePath(universe, planet);
+    sat_path.init(sat_points, 0);
+    scene.add(sat_path);
   }, 100);
-
-  sat_path = new SatellitePath(universe, planet);
-  sat_path.init(sat_points, 0);
-  scene.add(sat_path);
 });
 
 /**
@@ -202,6 +201,7 @@ const initUI = () => {
   select.addEventListener("change", (e) => {
     selected_sat_index = select.selectedIndex;
     console.log("seleted sat is :", sat_points.data.satDatas[selected_sat_index].name);
+    sat_path.init(sat_points, selected_sat_index);
   });
 
   let show_all_chkbox = <HTMLInputElement>document.getElementById("show_all");
