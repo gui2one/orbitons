@@ -14,11 +14,8 @@ export default class Planet extends THREE.Mesh {
     this.geometry = new THREE.SphereBufferGeometry(this.body.radius, 60, 30, 0, Math.PI * 2, 0, Math.PI);
     // this.material = new THREE.MeshLambertMaterial()
     let manager: THREE.LoadingManager = new THREE.LoadingManager();
-    manager.onStart = (url, itemsLoaded, itemsTotal) => {
-      // console.log("Started loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
-    };
+    manager.onStart = (url, itemsLoaded, itemsTotal) => {};
     manager.onLoad = () => {
-      console.log("Planet textures loading Completed ... Nice");
       this.material = new THREE.MeshStandardMaterial({
         map: this.diffuse_map,
         // roughness: 0.3,
@@ -30,9 +27,7 @@ export default class Planet extends THREE.Mesh {
       });
     };
 
-    manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-      // console.log("Loading file: " + url + ".\nLoaded " + itemsLoaded + " of " + itemsTotal + " files.");
-    };
+    manager.onProgress = (url, itemsLoaded, itemsTotal) => {};
 
     let loader_diffuse = new THREE.TextureLoader(manager);
     const onLoadDiffuse = (image) => {

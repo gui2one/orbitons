@@ -12,12 +12,16 @@ html,
 body {
   font-family: "Source Code Pro", monospace;
   overflow: hidden;
+  font-size: 13px;
 }
 canvas {
   display: block;
   z-index: -1000;
 }
 
+select {
+  font-size: 13px;
+}
 #debug_window {
   position: absolute;
   color: white;
@@ -121,7 +125,7 @@ canvas {
   align-items: center;
   //   padding: 0em 0.5em;
   transition: transform 0.3s;
-  padding: 0.3em;
+  padding: 1em;
   padding-bottom: 0.6em;
 
   // min-width: 50%;

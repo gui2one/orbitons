@@ -19,6 +19,10 @@ export default class SatellitesData {
     // console.log(this.data.name);
   }
 
+  /**
+   *
+   * @param filepath
+   */
   loadFromTextFile(filepath: string) {
     return new Promise((resolve, reject) => {
       fetch(filepath)
@@ -41,6 +45,10 @@ export default class SatellitesData {
     });
   }
 
+  /**
+   * puts data in satDatas array
+   * @param date
+   */
   getSatellitesData(date: Date) {
     let counter: number = 0;
     for (let data of this.satDatas) {
@@ -67,5 +75,36 @@ export default class SatellitesData {
 
       counter++;
     }
+  }
+
+  /**
+   *
+   * @param date
+   * @param sat_id
+   */
+  getSatelliteData(date: Date, sat_id: number): Object {
+    try {
+      let positionAndVelocity = SAT.propagate(this.satDatas[sat_id].satrec, date);
+      let positionEci = positionAndVelocity.position;
+
+      var gmst = SAT.gstime(date);
+
+      let positionGd = SAT.eciToGeodetic(positionEci, gmst);
+
+      let x = (positionGd.longitude / Math.PI) * 180;
+      let y = (positionGd.latitude / Math.PI) * 180;
+
+      // console.log("longitude :", positionGd.longitude);
+
+      return {
+        elevation: positionGd.height,
+        latitude: y,
+        longitude: x,
+      };
+    } catch (err) {
+      return null;
+    }
+
+    return null;
   }
 }

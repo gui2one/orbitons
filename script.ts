@@ -13,6 +13,7 @@ import SatellitesData from "./modules/SatellitesData";
 import SatellitesPoints from "./modules/SatellitesPoints";
 import SceneBackground from "./modules/SceneBackground";
 import { time } from "console";
+import SatellitePath from "./modules/SatellitePath";
 
 // Can also be 'vsop87/dist/vsop87a'.
 const vsop87c = require("vsop87/dist/vsop87c");
@@ -46,6 +47,7 @@ let bg: SceneBackground;
 
 let selected_sat_object: THREE.Mesh;
 let selected_sat_index: number;
+let sat_path: SatellitePath;
 
 //init THREEJS scene and renderer
 scene = new THREE.Scene();
@@ -118,6 +120,10 @@ let sat_points = new SatellitesPoints(scene, universe, planet, () => {
   setTimeout(() => {
     initUI();
   }, 100);
+
+  sat_path = new SatellitePath(universe, planet);
+  sat_path.init(sat_points, 0);
+  scene.add(sat_path);
 });
 
 /**
@@ -239,7 +245,7 @@ const updateUI = () => {
 
 const update = () => {
   // console.log(dateAdd(new Date(), "minute", -10));
-
+  // sat_path.geometry.verticesNeedUpdate = true;
   if (sat_points.bShaderLoaded) {
     updateUI();
 
