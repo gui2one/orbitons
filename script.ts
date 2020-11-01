@@ -14,6 +14,7 @@ import SatellitesPoints from "./modules/SatellitesPoints";
 import SceneBackground from "./modules/SceneBackground";
 import { time } from "console";
 import SatellitePath from "./modules/SatellitePath";
+import { RaycasterParameters } from "three";
 
 // Can also be 'vsop87/dist/vsop87a'.
 const vsop87c = require("vsop87/dist/vsop87c");
@@ -49,6 +50,11 @@ let selected_sat_object: THREE.Mesh;
 let selected_sat_index: number;
 let sat_path: SatellitePath;
 
+let raycaster: THREE.Raycaster = new THREE.Raycaster();
+// let raycaster_params: THREE.RaycasterParameters;
+raycaster.params.Points.threshold = 0.1;
+// raycaster.params.Line.threshold = 0.05;
+let mouse_pos: THREE.Vector2 = new THREE.Vector2(-1, 0);
 //init THREEJS scene and renderer
 scene = new THREE.Scene();
 renderer = new THREE.WebGLRenderer({
@@ -103,6 +109,14 @@ scene.add(dir_light);
 ambient = new THREE.AmbientLight("violet", 0.05);
 scene.add(ambient);
 
+window.addEventListener("mousemove", (event) => {
+  event.preventDefault();
+  mouse_pos.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse_pos.y = -((event.clientY / window.innerHeight) * 2 - 1);
+
+  // console.log(mouse_pos.x, mouse_pos.y);
+});
+
 const on_resize = (event) => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -118,10 +132,10 @@ window.dispatchEvent(event);
 let sat_points = new SatellitesPoints(scene, universe, planet, () => {
   //setTimeout is a dirty hack beacause UI does NOT init correctly most of the time, an async issue I think ....
   setTimeout(() => {
-    initUI();
     sat_path = new SatellitePath(universe, planet);
     sat_path.init(sat_points, 0);
     scene.add(sat_path);
+    initUI();
   }, 100);
 });
 
@@ -182,8 +196,10 @@ const initUI = () => {
   let UI_toggle_btn = <HTMLDivElement>document.getElementById("toggle_button");
   let time_UI_toggle_btn = <HTMLDivElement>document.getElementById("time_UI_toggle_button");
   let time_reset_btn = <HTMLDivElement>document.getElementById("time_reset_btn");
+
+  let show_all_chkbox = <HTMLInputElement>document.getElementById("show_all");
+  let show_path_chkbox = <HTMLInputElement>document.getElementById("show_path");
   let counter = 0;
-  // console.log(sat_points.data.satDatas);
 
   for (let data of sat_points.data.satDatas) {
     let option = document.createElement("option");
@@ -204,13 +220,18 @@ const initUI = () => {
     sat_path.init(sat_points, selected_sat_index);
   });
 
-  let show_all_chkbox = <HTMLInputElement>document.getElementById("show_all");
-
   if (show_all_chkbox) {
     show_all_chkbox.checked = true;
 
     show_all_chkbox.addEventListener("change", () => {
       sat_points.visible = show_all_chkbox.checked;
+    });
+  }
+
+  if (show_path_chkbox) {
+    show_path_chkbox.checked = true;
+    show_path_chkbox.addEventListener("change", () => {
+      sat_path.visible = show_path_chkbox.checked;
     });
   }
 
@@ -220,7 +241,6 @@ const initUI = () => {
   time_offset_mult_field.setAttribute("value", time_offset_mult.toString());
 
   time_offset_mult_field.addEventListener("input", (e) => {
-    // console.log();
     clock = new THREE.Clock(true);
     time_offset_mult = parseFloat((<HTMLInputElement>e.target).value);
   });
@@ -244,8 +264,6 @@ const updateUI = () => {
 };
 
 const update = () => {
-  // console.log(dateAdd(new Date(), "minute", -10));
-  // sat_path.geometry.verticesNeedUpdate = true;
   if (sat_points.bShaderLoaded) {
     updateUI();
 
@@ -254,12 +272,9 @@ const update = () => {
     simulation_time = time_offset;
     sat_points.update(simulation_date);
 
-    //draw selected Satellite
     if (selected_sat_index != -1) {
-      let pos2 = sat_points.geometry.vertices[selected_sat_index];
-      if (pos2) {
-        selected_sat_object.position.set(pos2.x, pos2.y, pos2.z);
-      }
+      let pos = sat_points.geometry.vertices[selected_sat_index];
+      if (pos) selected_sat_object.position.set(pos.x, pos.y, pos.z);
     }
   }
 };
@@ -267,17 +282,32 @@ const update = () => {
 let refresh_counter = 0;
 
 function animate() {
+  requestAnimationFrame(animate);
   let delta_t = clock.getDelta();
+  if (sat_points.bShaderLoaded) {
+    update();
+  }
+  // camera.updateMatrix();
+  // sat_points.updateMatrix();
+  camera.updateProjectionMatrix();
+  raycaster.setFromCamera(mouse_pos, camera);
+
+  // calculate objects intersecting the picking ray
+  const intersects = raycaster.intersectObjects([sat_points]);
+
+  let intersection = intersects.length > 0 ? intersects[0] : null;
+  // console.log(intersection);
+  if (intersection) {
+    console.log(intersection);
+  }
+  // if (intersection) console.log(intersection);
 
   if (refresh_counter > 0.025) {
     refresh_counter = 0;
-    update();
   }
 
   refresh_counter += delta_t;
 
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
 }
-
 animate();

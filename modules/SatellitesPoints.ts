@@ -35,7 +35,7 @@ export default class SatellitesPoints extends THREE.Points {
           data.latitude,
           data.longitude
         );
-        // console.log(data.elevation);
+
         this.geometry.vertices.push(pos);
       }
 
@@ -75,24 +75,26 @@ export default class SatellitesPoints extends THREE.Points {
   }
 
   update(date: Date = new Date()) {
-    this.data.getSatellitesData(date);
+    if (this.bShaderLoaded) {
+      this.data.getSatellitesData(date);
 
-    let i = 0;
-    for (let data of this.data.satDatas) {
-      let pos = this.calcPosFromLatLonRad(
-        (this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale,
-        data.latitude,
-        data.longitude
-      );
+      let i = 0;
+      for (let data of this.data.satDatas) {
+        let pos = this.calcPosFromLatLonRad(
+          (this.planet.body.radius + data.elevation * 1000) * this.universeParams.scale,
+          data.latitude,
+          data.longitude
+        );
 
-      this.geometry.vertices[i].x = pos.x;
-      this.geometry.vertices[i].y = pos.y;
-      this.geometry.vertices[i].z = pos.z;
+        this.geometry.vertices[i].x = pos.x;
+        this.geometry.vertices[i].y = pos.y;
+        this.geometry.vertices[i].z = pos.z;
 
-      i++;
+        i += 1;
+      }
+      this.geometry.computeBoundingBox();
+      this.geometry.verticesNeedUpdate = true;
     }
-
-    (<THREE.Geometry>this.geometry).verticesNeedUpdate = true;
   }
 
   calcPosFromLatLonRad(radius, lat, lon) {
